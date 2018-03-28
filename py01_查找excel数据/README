@@ -9,7 +9,7 @@
 	3、只需要编辑gconf.py中的相应变量即可,其它程序文件中代码不需要编辑!
 	4、运行方式:
         1、使用jupyter运行main.py.ipynb(面向对象方式)
-        2、使用jupyter运行find_assets_v5.py.ipynb(函数)
+        2、使用jupyter运行find_excel_data.py.ipynb(函数)
 
 
 
