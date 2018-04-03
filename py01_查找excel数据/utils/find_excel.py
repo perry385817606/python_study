@@ -64,12 +64,13 @@ class FindExcelData(object):
         data = self.get_data()   # 在类内部调用类方法
         for k, v in data.items():
             assets_list = v['assets_list']
-            sheet_data = {'assets_list': []}
+            # sheet_data = {'assets_list': []}
+            tmp_data = []
             for asset in assets_list:
                 for info in self.info_list:
                     if asset.get(self.field) == info:
-                        sheet_data['assets_list'].append(asset)
-                        filter_data[k] = { 'headers': v['headers'],'assets_list': sheet_data.get('assets_list') }
+                        tmp_data.append(asset)
+                        filter_data[k] = { 'headers': v['headers'],'assets_list': tmp_data }
         return filter_data
 
 

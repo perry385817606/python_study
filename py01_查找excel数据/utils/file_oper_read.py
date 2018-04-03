@@ -20,9 +20,9 @@ class FileRead():
 	    		info_list = [ line.strip() for line in f ]
 	    except UnicodeDecodeError as e:
 	    	print(e,'\n','Unicode 解码时的错误, txt文件格式不对,请将文件修改为UTF-8编码的格式!')
-	    	return info_list
+	    	# return info_list
 	    else:
-	    	return info_list
+	    	return list(set(info_list))   # 去掉ip.txt中重复的数据
 
 
 # data = ['10.211.152.254', '100.100.100.100']
