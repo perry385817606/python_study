@@ -6,6 +6,7 @@
 import xlrd
 import xlwt
 import json
+import datetime
 
 def get_sheets(excelFile):
     wb = xlrd.open_workbook(excelFile)
@@ -84,10 +85,22 @@ def write_excel(filter_data, Sheets, output='output.xls'):
 
 def get_msg(file_name):
     info_list = []
-    with open(file_name, encoding='utf-8') as f:
-        info_list = [ line.strip() for line in f ]
-
-    return list(set(info_list))   # 去掉ip.txt中重复的数据
+    try:
+        with open(file_name, encoding='UTF-8') as f:
+            '''
+            解决了ip.txt中的字符编码问题,
+            参考链接: https://blog.csdn.net/xiazhipeng1000/article/details/79720391
+            https://www.cnblogs.com/mjiang2017/p/8431977.html
+            '''
+            info_list = [ line.encode('utf-8').decode('utf-8-sig').strip() for line in f ]
+            # info_list = [ line.strip() for line in f ]
+    except UnicodeDecodeError as e:
+        print(e,'\n','Unicode 解码时的错误, txt文件格式不对,请将文件修改为UTF-8编码的格式!')
+        # return info_list
+    else:
+        # print(list(set(info_list)))
+        # print( type( list(set(info_list))[0] ) )
+        return list(set(info_list))   # 去掉ip.txt中重复的数据
 
 
 def no_found(field, info_list, filter_data):
@@ -116,7 +129,8 @@ def wirte_file(info, outfile):
 
 
 if __name__ == '__main__':
-    field = u'设备名称'
+    starttime = datetime.datetime.now()
+    field = u'业务系统名称'
     info_list = get_msg('ip.txt')
     file_name = 'ip.txt'
     excelFile = u'test.xls'
@@ -126,7 +140,9 @@ if __name__ == '__main__':
     filter_data = filter_assets(data, info_list, field)
     write_excel(filter_data, Sheets)
     no_found = no_found(field, info_list, filter_data)
-
-    # print('no found....\n',no_found)
-
     wirte_file(no_found, 'no_found.txt')
+
+    endtime = datetime.datetime.now()
+    print( '************************end************************' )
+    print( '程序运行了%s秒' %(endtime - starttime).seconds )
+

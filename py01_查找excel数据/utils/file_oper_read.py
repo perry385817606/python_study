@@ -17,7 +17,12 @@ class FileRead():
 	    info_list = []
 	    try:
 	    	with open(self.input_file, encoding='UTF-8') as f:
-	    		info_list = [ line.strip() for line in f ]
+	            '''
+	            解决了ip.txt中的字符编码问题,
+	            参考链接: https://blog.csdn.net/xiazhipeng1000/article/details/79720391
+	            https://www.cnblogs.com/mjiang2017/p/8431977.html
+	            '''
+	            info_list = [ line.encode('utf-8').decode('utf-8-sig').strip() for line in f ]
 	    except UnicodeDecodeError as e:
 	    	print(e,'\n','Unicode 解码时的错误, txt文件格式不对,请将文件修改为UTF-8编码的格式!')
 	    	# return info_list
