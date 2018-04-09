@@ -1,10 +1,11 @@
-#encoding=utf-8
+
 #python3.5
 #date: 2018-03-23
 #function:按字段查找,V5版本，可以按给定的字段在excel中全表查询
 
 import xlrd
 import xlwt
+import json
 
 def get_sheets(excelFile):
     wb = xlrd.open_workbook(excelFile)
@@ -31,6 +32,10 @@ def get_data(excelFile, Sheets):
         
         data[k] = {'assets_list': assets_list, 'headers': headers}
 
+    # with open('test.html','w') as f:
+    #     f.write(json.dumps(data, ensure_ascii=False))
+    # json_data = json.dumps(data, ensure_ascii=False)
+    # print(json_data)
     return data
 
 
@@ -111,7 +116,7 @@ def wirte_file(info, outfile):
 
 
 if __name__ == '__main__':
-    field = u'DCN IP'
+    field = u'设备名称'
     info_list = get_msg('ip.txt')
     file_name = 'ip.txt'
     excelFile = u'test.xls'
