@@ -1,12 +1,12 @@
-
 #python3.5
 #date: 2018-03-23
-#function:按字段查找,V5版本，可以按给定的字段在excel中全表查询
+#function:按字段查找,V5版本，可以按给定的字段在excel中全表查询,并可以自定义输出字段
 
 import xlrd
 import xlwt
 import json
 import datetime
+import gconf
 
 def get_sheets(excelFile):
     wb = xlrd.open_workbook(excelFile)
@@ -78,9 +78,9 @@ def write_excel(filter_data, Sheets, output='output.xls'):
     try:
         wb.save(output)
     except:
-        print('%s 写入失败!' % output)
+        print('{0} 写入失败!'.format(output))
     else:
-        print('%s 写入成功!' % output)
+        print('{0} 写入成功!'.format(output))
 
 
 def get_msg(file_name):
@@ -104,14 +104,14 @@ def get_msg(file_name):
 
 
 def no_found(field, info_list, filter_data):
-    no_found,found = [], []
+    no_found_data,found = [], []
     for k, v in filter_data.items():
         assets_list = v['assets_list']
         for item in assets_list:
             found.append(item.get(field))
     
-    no_found = (set(info_list).difference(set(found)))
-    return list(no_found)
+    no_found_data = (set(info_list).difference(set(found)))
+    return list(no_found_data)
 
 
 def wirte_file(info, outfile):
@@ -128,21 +128,78 @@ def wirte_file(info, outfile):
         print('没有未查找到的信息.')
 
 
-if __name__ == '__main__':
-    starttime = datetime.datetime.now()
-    field = u'业务系统名称'
-    info_list = get_msg('ip.txt')
-    file_name = 'ip.txt'
-    excelFile = u'test.xls'
+def merge_sheet_data(filter_data, outputfiled, output):
+    ouput_filed = gconf.outputfiled
+    fields = filter_data.values()
 
-    Sheets = get_sheets(excelFile)
-    data = get_data(excelFile, Sheets)
-    filter_data = filter_assets(data, info_list, field)
+    # 找出每个表中共同的字段
+    count = len(fields)    # count为查找到的sheet的数量
+
+    tmp = [ field for item in fields for field in item['headers'] ]
+    headers = [ i for i in tmp if tmp.count(i) == count ]
+    headers = list(set(headers))
+    no_exist = [ field.strip() for field in ouput_filed  if field.strip() not in headers ]
+
+    if no_exist:
+        print('以下字段不存在于过滤的结果中:\n', no_exist)
+        print()
+        print('可以从以下字段中选择要输出的字段:\n', headers)
+        return 
+    else:
+        headers = ouput_filed
+
+    # 组成一个新的列表 [{'a': 1},{'a': 2},{'b': 1},{'b': 2}]
+    megre_data, tmp = [], {}
+    for asset in filter_data.values():
+        assets = asset['assets_list']
+        for item in assets:
+            for field in headers:
+                tmp[field] = item[field]
+            megre_data.append(tmp)
+            tmp = {}
+
+    wb = xlwt.Workbook(encoding='utf-8')         # 创建一个excel工作薄
+    ws = wb.add_sheet('megre')    # 在excel工作薄中新建一个sheet
+
+    head_style = xlwt.easyxf('font: bold on')
+    ncols = len(headers)            # 列数
+    for i in range(ncols):          # 写入表头
+        ws.write(0, i, headers[i], head_style)  # 写入第0行，第i列数据
+
+    index = 1   
+    for each in megre_data:
+        for j in range(ncols):
+            ws.write(index, j, each.get(headers[j]))  # 第index行,第j列写数据
+        index += 1
+    try:
+        wb.save(output)
+    except:
+        print('\n{0} 写入失败!'.format(output))
+    else:
+        print('\n{0} 写入成功!'.format(output))
+ 
+
+def main():
+    start_time = datetime.datetime.now()
+
+    info_list = get_msg(gconf.file_name)
+
+    Sheets = get_sheets(gconf.excelFile)
+    data = get_data(gconf.excelFile, Sheets)
+    filter_data = filter_assets(data, info_list, gconf.field)
     write_excel(filter_data, Sheets)
-    no_found = no_found(field, info_list, filter_data)
-    wirte_file(no_found, 'no_found.txt')
+    no_found_data = no_found(gconf.field, info_list, filter_data)
+    wirte_file(no_found_data, gconf.no_found)
 
-    endtime = datetime.datetime.now()
+    # gconf.merge默认为False,不合并找到的表格
+    if gconf.merge:
+        merge_sheet_data(filter_data, outputfiled = gconf.outputfiled, output = gconf.mergeoupt_excel)
+
+    end_time = datetime.datetime.now()
     print( '************************end************************' )
-    print( '程序运行了%s秒' %(endtime - starttime).seconds )
+    print( '程序运行了%s秒' %(end_time - start_time).seconds )
+
+
+if __name__ == '__main__':
+    main()
 
