@@ -1,0 +1,49 @@
+﻿xlrd  读excel
+
+# 打开一个工作薄
+wb = xlrd.open_workbook('test.xls')
+
+# 获取所有的Sheet, 是一个列表
+ws_list = wb.sheet_names()
+
+# 按名称获取某个工作表
+ws = wb.sheet_by_name('xxxx')
+
+# 按索引获取某个工作表
+ws = wb.sheet_by_index(0)
+
+# 获取工作表中的行数和列数
+nrows = ws.nrows       #行数
+ncols = ws.ncols       #列数
+
+# 获取单元格内容
+ ws.cell(行号,列号)
+
+# 获取整行或者整列的值
+rows = ws.row_values(0)  #第一行内容
+cols = ws.col_values(1)  #第二列内容
+
+# 打印单元格内容格式
+ws.cell(1,0).ctype
+
+
+
+xlwt   写excel
+
+# 创建一个excel工作薄
+wb = xlwt.Workbook(encoding='utf-8')
+
+# 在excel工作薄中新建一个sheet
+ws = wb.add_sheet(sheet_name)
+
+# 设置字体样式
+head_style = xlwt.easyxf('font: bold on')
+
+# 第i行,第j列单元格写入'abc',并设置样式
+ws.write(i, j, 'abc', head_style)
+
+# 保存工作薄
+wb.save()
+
+
+http://blog.sina.com.cn/s/blog_6babbcb8010182c3.html
