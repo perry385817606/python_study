@@ -128,17 +128,17 @@ def wirte_file(info, outfile):
         print('没有未查找到的信息.')
 
 
-def merge_sheet_data(filter_data, outputfiled, output):
+def merge_sheet_data(Sheets, filter_data, outputfiled, output):
     ouput_filed = gconf.outputfiled
     fields = filter_data.values()
 
-    # 找出每个表中共同的字段
     count = len(fields)    # count为查找到的sheet的数量
 
-    tmp = [ field for item in fields for field in item['headers'] ]
-    headers = [ i for i in tmp if tmp.count(i) == count ]
+    tmp = [ field for item in fields for field in item['headers'] ]  # 过滤出每个表的字段
+    headers = [ i for i in tmp if tmp.count(i) == count ]  # 找出每个表中共同的字段
     headers = list(set(headers))
-    no_exist = [ field.strip() for field in ouput_filed  if field.strip() not in headers ]
+    # 找出不存在的字段
+    no_exist = [ field.strip() for field in ouput_filed  if field.strip() not in headers ] 
 
     if no_exist:
         print('以下字段不存在于过滤的结果中:\n', no_exist)
@@ -147,16 +147,24 @@ def merge_sheet_data(filter_data, outputfiled, output):
         return 
     else:
         headers = ouput_filed
-
-    # 组成一个新的列表 [{'a': 1},{'a': 2},{'b': 1},{'b': 2}]
+        headers.append('所属表')
+    
+    # 组成一个新的assets [{'a': 1},{'a': 2},{'b': 1},{'b': 2}], old
+    # 组成一个新的assets [{'a': 1,'所属表':'x86'},{'a': 2, '所属表':'刀片'},{'b': 1, '所属表':'虚拟机'}]
     megre_data, tmp = [], {}
-    for asset in filter_data.values():
-        assets = asset['assets_list']
+    for k, v in filter_data.items():
+        sheet_name = Sheets.get(k)
+        assets = v['assets_list']
         for item in assets:
-            for field in headers:
-                tmp[field] = item[field]
+            # for field in headers[0:-1:1]:
+            #     tmp[field] = item[field]
+            #     tmp['所属表'] = sheet_name
+            tmp = dict( zip(headers[0:-1:1], [ item[field] for item in assets for field in headers[0:-1:1] ]) )
+            tmp['所属表'] = sheet_name
+            # print(tmp)
             megre_data.append(tmp)
             tmp = {}
+
 
     wb = xlwt.Workbook(encoding='utf-8')         # 创建一个excel工作薄
     ws = wb.add_sheet('megre')    # 在excel工作薄中新建一个sheet
@@ -184,8 +192,8 @@ def main():
 
     info_list = get_msg(gconf.file_name)
 
-    Sheets = get_sheets(gconf.excelFile)
-    data = get_data(gconf.excelFile, Sheets)
+    Sheets = get_sheets(gconf.input_excel)
+    data = get_data(gconf.input_excel, Sheets)
     filter_data = filter_assets(data, info_list, gconf.field)
     write_excel(filter_data, Sheets)
     no_found_data = no_found(gconf.field, info_list, filter_data)
@@ -193,10 +201,10 @@ def main():
 
     # gconf.merge默认为False,不合并找到的表格
     if gconf.merge:
-        merge_sheet_data(filter_data, outputfiled = gconf.outputfiled, output = gconf.mergeoupt_excel)
+        merge_sheet_data(Sheets, filter_data, outputfiled = gconf.outputfiled, output = gconf.mergeoupt_excel)
 
     end_time = datetime.datetime.now()
-    print( '************************end************************' )
+    print( '{0}{1}{2}'.format('*' * 40, 'end', '*' * 40) )
     print( '程序运行了%s秒' %(end_time - start_time).seconds )
 
 
