@@ -1,13 +1,17 @@
-#python3.x
-#date: 2018-4-11
-# http://www.cnblogs.com/zhaof/p/7284312.html
-# http://www.cnblogs.com/zhaof/category/858301.html
-
 import re
+import json
 import requests
 from bs4 import BeautifulSoup
+from requests.exceptions import RequestException
 import xlwt
 
+'''
+登录github后,获取cookie,再利用cookie访问个人主页,获取项目信息
+'''
+
+# http://www.cnblogs.com/zhaof/p/7284312.html
+# http://www.cnblogs.com/zhaof/category/858301.html
+# https://www.cnblogs.com/ddddfpxx/p/8624715.html
 
 def get_github_html(url):
     '''
@@ -15,10 +19,9 @@ def get_github_html(url):
     :param url: https://github.com/login
     :return: 登录页面的HTML,以及第一次的cooke
     '''
-
     response = requests.get(url)
-    first_cookie = response.cookies.get_dict()
-    return response.text, first_cookie
+    text, first_cookie = response.text, response.cookies.get_dict()
+    return text, first_cookie
 
 
 def get_token(html):
@@ -27,11 +30,11 @@ def get_token(html):
     :param html:
     :return: 获取csrftoken
     '''
-
     soup = BeautifulSoup(html, 'lxml')
-    res = soup.find('input',attrs={'name': 'authenticity_token'})
+    res = soup.find('input', attrs={'name': 'authenticity_token'})
     token = res['value']
     return token
+
 
 def github_login(url, token, cookie, username, password):
 	data = {
@@ -45,7 +48,11 @@ def github_login(url, token, cookie, username, password):
 	response = requests.post(url, data=data, cookies=cookie)
 	# print(response.status_code)
 	cookie = response.cookies.get_dict()
+	with open('cookie.txt', 'w') as f:
+		f.write(json.dumps(cookie))
+
 	return cookie
+
 
 def get_repositories_by_regexp(url, cookie):
 	response = requests.get(url, cookies=cookie)
@@ -53,7 +60,7 @@ def get_repositories_by_regexp(url, cookie):
 	pattern = re.compile('<div.*?class="listgroup.*?>.*?<a.*?class="mr-1".*?href=".*?">(.*?)</a>' +
 						 '.*?<small>(.*?)</small>' + 
 						 '.*?<span.*?Forked from.*?<a.*?href="(.*?)">(.*?)</a>', re.S
-		)
+						)
 
 	res = re.findall(pattern, text)
 	result = []
@@ -72,7 +79,7 @@ def get_repositories_by_bs4(url, cookie):
 	response = requests.get(url, cookies=cookie)
 	text = response.text
 	soup = BeautifulSoup(text, 'lxml')
-	res = soup.find_all('div', attrs = {'class':'listgroup-item simple public fork js-collab-repo'})
+	res = soup.find_all('div', attrs = {'class': 'listgroup-item simple public fork js-collab-repo'})
 	result = []
 	for item in res:
 		name = item.find('a', class_ = 'mr-1').text.split('/')[1]
@@ -88,6 +95,7 @@ def get_repositories_by_bs4(url, cookie):
 	keys = ['name', 'size', 'link']
 	result = sorted(result, key=lambda x: x.get('size'))
 	return keys, result
+
 
 def save_to_excel(keys, result, output):
 	wb = xlwt.Workbook(encoding='utf-8')
@@ -118,30 +126,26 @@ def save_to_excel(keys, result, output):
 
 def main():
 	html, cookie = get_github_html(Base_URL)
-	# print(cookie)
+	print(cookie)
 	token = get_token(html)
-
+	print('*' * 60)
 	cookie = github_login(Login_URL, token, cookie, username, password)
-	# keys, res = get_repositories_by_regexp(Repositories_URL, cookie)
-
-	for item in get_repositories_by_bs4(Repositories_URL, cookie)[1]:
-		print(item)
+	print(cookie)
+	# keys, result = get_repositories_by_regexp(Repositories_URL, cookie)
 
 	keys, result = get_repositories_by_bs4(Repositories_URL, cookie)
+	# print(result)
 	save_to_excel(keys, result, output)
 
 if __name__ == '__main__':
-	username = '用户名'
-	password = '密码'
+	username = ''
+	password = ''
+	if username == '' or password == '':
+		print('请输入正确的用户名和密码!')
+	else:
+		Base_URL = "https://github.com/login"
+		Login_URL = "https://github.com/session"
+		Repositories_URL = "https://github.com/settings/repositories"
+		output = 'github_respos.xls'
 
-	proxies = {
-	    "https": "https://xxx.com:8080",
-	    "http": "http://xxx:8080",
-	}
-
-	Base_URL = "https://github.com/login"
-	Login_URL = "https://github.com/session"
-	Repositories_URL = "https://github.com/settings/repositories"
-	output = 'github_respos.xls'
-
-	main()
+		main()
