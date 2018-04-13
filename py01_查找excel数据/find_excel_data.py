@@ -1,11 +1,16 @@
 #python3.5
 #date: 2018-03-23
-#function:按字段查找,V5版本，可以按给定的字段在excel中全表查询,并可以自定义输出字段
-
-import xlrd
-import xlwt
+'''
+说明:
+v1: 2018-03-23 按给定的某一列在excel工作薄的所有sheet中查找数据, 并输出至一个新的excel文件中;
+v2: 2018-03-27 增加了自定义输出表格中列的功能;
+v3: 2018-04-15 增加了自定义输出sheet的功能;
+'''
+import sys
 import json
 import datetime
+import xlrd
+import xlwt
 import gconf
 
 def get_sheets(excelFile):
@@ -134,16 +139,16 @@ def merge_sheet_data(Sheets, filter_data, outputfiled, output):
 
     count = len(fields)    # count为查找到的sheet的数量
 
-    tmp = [ field for item in fields for field in item['headers'] ]  # 过滤出每个表的字段
-    headers = [ i for i in tmp if tmp.count(i) == count ]  # 找出每个表中共同的字段
+    tmp = [ field for item in fields for field in item['headers'] ]  # 过滤出每个表的列
+    headers = [ i for i in tmp if tmp.count(i) == count ]  # 找出每个表中共同的列
     headers = list(set(headers))
-    # 找出不存在的字段
+    # 找出不存在的列
     no_exist = [ field.strip() for field in ouput_filed  if field.strip() not in headers ] 
 
     if no_exist:
-        print('以下字段不存在于过滤的结果中:\n', no_exist)
+        print('以下列不存在于过滤的结果中:\n', no_exist)
         print()
-        print('可以从以下字段中选择要输出的字段:\n', headers)
+        print('可以从以下列中选择要输出的列:\n', headers)
         return 
     else:
         headers = ouput_filed
@@ -166,7 +171,7 @@ def merge_sheet_data(Sheets, filter_data, outputfiled, output):
             tmp = {}
 
 
-    wb = xlwt.Workbook(encoding='utf-8')         # 创建一个excel工作薄
+    wb = xlwt.Workbook(encoding='utf-8')   # 创建一个excel工作薄
     ws = wb.add_sheet('megre')    # 在excel工作薄中新建一个sheet
 
     head_style = xlwt.easyxf('font: bold on')
@@ -189,10 +194,21 @@ def merge_sheet_data(Sheets, filter_data, outputfiled, output):
 
 def main():
     start_time = datetime.datetime.now()
-
     info_list = get_msg(gconf.file_name)
 
+    # 选择从哪几个sheet中输出查找到的数据,当gconf.all_sheet为True时,输出查找到所有sheet的数据,
+    # 当gconf.all_sheet不为True时,可以自定义输出哪些sheet的数据
     Sheets = get_sheets(gconf.input_excel)
+
+    if gconf.all_sheet:
+        Sheets = get_sheets(gconf.input_excel)
+    else:
+        for sheet in gconf.sheet_list:
+            if sheet not in list(Sheets.keys()):
+                print('{0} sheet不存在 {1}文件中,请重新选择!'.format(sheet, gconf.input_excel))
+                sys.exit(2)
+        Sheets = dict(zip(gconf.sheet_list, gconf.sheet_list))
+
     data = get_data(gconf.input_excel, Sheets)
     filter_data = filter_assets(data, info_list, gconf.field)
     write_excel(filter_data, Sheets)
