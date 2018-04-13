@@ -127,8 +127,8 @@ class FindExcelData(object):
 
 
 if __name__ == '__main__':
-    field = u'业务归属科室'
-    input_excel = u'资产导出全表20180205.xls'
+    field = u'字段1'
+    input_excel = u'test.xls'
     file_name = 'ip.txt'
     # info_list = get_msg('ip.txt')
     info_list = []
