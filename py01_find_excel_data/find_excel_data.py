@@ -1,10 +1,11 @@
 #python3.5
-#date: 2018-03-23
+#create date: 2018-03-23
 '''
 说明:
-v1: 2018-03-23 按给定的某一列在excel工作薄的所有sheet中查找数据, 并输出至一个新的excel文件中;
-v2: 2018-03-27 增加了自定义输出表格中列的功能及不同sheet中的数据进行合并;
-v3: 2018-04-13 增加了自定义输出sheet的功能;
+v1:   2018-03-23 按给定的某一列在excel工作薄的所有sheet中查找数据, 并输出至一个新的excel文件中;
+v2:   2018-03-27 增加了merge_sheet_data函数,支持sheet的合并及自定义输出列;
+v3:   2018-04-13 修改main()函数,增加了自定义输出哪些sheet的功能;
+v3.1: 2018-04-13 修改filter_data函数,增加了查找到记录的统计
 '''
 import sys
 import json
@@ -59,7 +60,12 @@ def filter_assets(data, info_list, field):
                     # filter_data[k] = { 'headers': v['headers'],'assets_list': sheet_data.get('assets_list') }
                     tmp_data.append(asset)
                     filter_data[k] = { 'headers': v['headers'],'assets_list': tmp_data }
-    return filter_data
+
+    count = 0
+    for v in filter_data.values():
+        count += len(v['assets_list'])
+
+    return count, filter_data
 
 
 def write_excel(filter_data, Sheets, output='output.xls'):
@@ -161,15 +167,15 @@ def merge_sheet_data(Sheets, filter_data, outputfiled, output):
         sheet_name = Sheets.get(k)
         assets = v['assets_list']
         for item in assets:
-            # for field in headers[0:-1:1]:
-            #     tmp[field] = item[field]
-            #     tmp['所属表'] = sheet_name
-            tmp = dict( zip(headers[0:-1:1], [ item[field] for item in assets for field in headers[0:-1:1] ]) )
-            tmp['所属表'] = sheet_name
-            # print(tmp)
+            for field in headers[0:-1:1]:
+                tmp[field] = item[field]
+                tmp['所属表'] = sheet_name
             megre_data.append(tmp)
             tmp = {}
 
+        #下面两行有问题
+        # tmp = dict( zip(headers[0:-1:1], [ item[field] for item in assets for field in headers[0:-1:1] ]) )
+        # tmp['所属表'] = sheet_name
 
     wb = xlwt.Workbook(encoding='utf-8')   # 创建一个excel工作薄
     ws = wb.add_sheet('megre')    # 在excel工作薄中新建一个sheet
@@ -210,7 +216,7 @@ def main():
         Sheets = dict(zip(gconf.sheet_list, gconf.sheet_list))
 
     data = get_data(gconf.input_excel, Sheets)
-    filter_data = filter_assets(data, info_list, gconf.field)
+    count, filter_data = filter_assets(data, info_list, gconf.field)
     write_excel(filter_data, Sheets)
     no_found_data = no_found(gconf.field, info_list, filter_data)
     wirte_file(no_found_data, gconf.no_found)
@@ -218,6 +224,9 @@ def main():
     # gconf.merge默认为False,不合并找到的表格
     if gconf.merge:
         merge_sheet_data(Sheets, filter_data, outputfiled = gconf.outputfiled, output = gconf.mergeoupt_excel)
+
+    print()
+    print('一共找到了%s条记录'  % count)
 
     end_time = datetime.datetime.now()
     print( '{0}{1}{2}'.format('*' * 40, 'end', '*' * 40) )
